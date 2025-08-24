@@ -1,16 +1,19 @@
 from rest_framework import serializers
+from order.models import Order
+from product.models.product import Product
+from django.contrib.auth.models import User
 
-from product.models import Product
-from product.serializers.product_serializer import ProductSerializer
 
-class OrderSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(required=True, many=True)
-    total = serializers.SerializerMethodField()
-    
-    def get_total(self, instance):
-        total = sum([product.price for product in instance.product.all()])
-        return total
-    
+class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['product', 'total']
+        fields = ["id", "title", "description", "price", "active"]
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(many=True, read_only=True)
+    user = serializers.StringRelatedField()
+
+    class Meta:
+        model = Order
+        fields = ["id", "user", "product"]
