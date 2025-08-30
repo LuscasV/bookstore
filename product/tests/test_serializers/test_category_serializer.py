@@ -1,15 +1,21 @@
-from django.test import TestCase
+import pytest
+from product.models import Category
+from product.serializers.category_serializer import CategorySerializer
 
-from product.factories import CategoryFactory, ProductFactory
-from product.serializers import CategorySerializer
+@pytest.mark.django_db
+class TestCategorySerializer:
+    def test_category_serializer_fields(self):
+        category = Category.objects.create(
+            title="Food",
+            slug="food",
+            description="Category for food items",
+            active=True,
+        )
+        serializer = CategorySerializer(category)
+        data = serializer.data
 
-
-class TestCategorySerializer(TestCase):
-    def setUp(self) -> None:
-        self.category = CategoryFactory(title="food")
-        self.category_serializer = CategorySerializer(self.category)
-
-    def test_order_serializer(self):
-        serializer_data = self.category_serializer.data
-
-        self.assertEquals(serializer_data["title"], "food")
+        assert set(data.keys()) == {"id", "title", "slug", "description", "active"}
+        assert data["title"] == "Food"
+        assert data["slug"] == "food"
+        assert data["description"] == "Category for food items"
+        assert data["active"] is True
