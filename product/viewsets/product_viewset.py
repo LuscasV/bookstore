@@ -1,16 +1,16 @@
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
-
-from product.models.product import Product
+from rest_framework import viewsets, permissions
+from product.models import Product
 from product.serializers.product_serializer import ProductSerializer
 
 
-class ProductViewSet(ModelViewSet):
-    """
-    ViewSet para gerenciar produtos.
-    """
+class ProductViewSet(viewsets.ModelViewSet):
+    queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get_queryset(self):
-        return Product.objects.all().order_by("id")
+    # Apenas staff pode criar, atualizar ou deletar
+    def get_permissions(self):
+        if self.action in ["create", "update", "partial_update", "destroy"]:
+            permission_classes = [permissions.IsAdminUser]
+        else:
+            permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+        return [permission() for permission in permission_classes]

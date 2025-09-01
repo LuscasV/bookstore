@@ -12,7 +12,8 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     product = ProductSerializer(many=True, read_only=True)
-    user = serializers.StringRelatedField()
+    # Mostra o username do usuário ao invés do ID
+    user = serializers.StringRelatedField()  # isso retorna o __str__ do User, normalmente o username
 
     class Meta:
         model = Order

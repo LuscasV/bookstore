@@ -1,16 +1,16 @@
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
-
-from product.models.category import Category
+from rest_framework import viewsets, permissions
+from product.models import Category
 from product.serializers.category_serializer import CategorySerializer
 
 
-class CategoryViewSet(ModelViewSet):
-    """
-    ViewSet para gerenciar categorias.
-    """
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get_queryset(self):
-        return Category.objects.all().order_by("id")
+    # Apenas staff pode criar, atualizar ou deletar categorias
+    def get_permissions(self):
+        if self.action in ["create", "update", "partial_update", "destroy"]:
+            permission_classes = [permissions.IsAdminUser]
+        else:
+            permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+        return [permission() for permission in permission_classes]

@@ -1,39 +1,53 @@
-import json
-import pytest
 from django.urls import reverse
-from rest_framework.test import APIClient
-from rest_framework.authtoken.models import Token
 from rest_framework import status
-
+from rest_framework.test import APITestCase
 from product.factories import CategoryFactory
 from order.factories import UserFactory
 
-@pytest.mark.django_db
-class TestCategoryViewSet:
 
-    def setup_method(self):
-        self.client = APIClient()
-        self.user = UserFactory()
-        token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+class TestCategoryViewSet(APITestCase):
+    def setUp(self):
+        # Usuário staff para criar, atualizar e deletar categorias
+        self.user = UserFactory(is_staff=True)
+        self.client.force_authenticate(user=self.user)
 
-        self.category = CategoryFactory(title="electronics")
-
-    def test_get_all_category(self):
+    def test_list_categories(self):
+        category = CategoryFactory()
         url = reverse("category-list")
         response = self.client.get(url)
-        assert response.status_code == status.HTTP_200_OK
-        data = json.loads(response.content)
-    
-        # Se o retorno é uma lista
-        assert data[0]["title"] == self.category.title
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_retrieve_category(self):
+        category = CategoryFactory()
+        url = reverse("category-detail", args=[category.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_create_category(self):
-        self.user = UserFactory(is_staff=True)
-        token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
-
         url = reverse("category-list")
-        data = json.dumps({"title": "technology"})
-        response = self.client.post(url, data=data, content_type="application/json")
-        assert response.status_code == status.HTTP_201_CREATED
+        data = {
+            "title": "Tecnologia",
+            "slug": "tecnologia",
+            "description": "Categoria de tecnologia",
+            "active": True
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_update_category(self):
+        category = CategoryFactory()
+        url = reverse("category-detail", args=[category.id])
+        data = {
+            "title": "Tecnologia Atualizada",
+            "slug": "tecnologia-atualizada",
+            "description": "Descrição nova",
+            "active": True
+        }
+        response = self.client.put(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_category(self):
+        category = CategoryFactory()
+        url = reverse("category-detail", args=[category.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

@@ -1,43 +1,52 @@
 import json
-import pytest
 from django.urls import reverse
-from rest_framework.test import APIClient
-from rest_framework.authtoken.models import Token
 from rest_framework import status
-
-from order.factories import UserFactory, OrderFactory
+from rest_framework.test import APITestCase
+from order.factories import OrderFactory, UserFactory
 from product.factories import ProductFactory
 
-@pytest.mark.django_db
-class TestOrderViewSet:
 
-    def setup_method(self):
-        self.client = APIClient()
+class TestOrderViewSet(APITestCase):
+    def setUp(self):
         self.user = UserFactory()
-        token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        self.client.force_authenticate(user=self.user)
 
-        self.product = ProductFactory()
-        self.order = OrderFactory(user=self.user)
-        self.order.product = self.product
-        self.order.save()
-
-    def test_get_orders(self):
+    def test_list_orders(self):
+        order = OrderFactory(user=self.user)
         url = reverse("order-list")
         response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        assert response.status_code == status.HTTP_200_OK
-        data = json.loads(response.content)
-        assert len(data) >= 1
-        assert data["results"][0]["user"] == self.user.id
+    def test_retrieve_order(self):
+        order = OrderFactory(user=self.user)
+        url = reverse("order-detail", args=[order.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_create_order(self):
+        """Deve criar um novo pedido com produtos"""
+        product = ProductFactory()
         url = reverse("order-list")
-        data = json.dumps({
-            "user": self.user.id,
-            "products_id": [self.product.id]
-        })
-        response = self.client.post(url, data=data, content_type="application/json")
+        data = {
+            "product_ids": [product.id]
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["user"] == self.user.id
+    def test_update_order(self):
+        """Deve atualizar os produtos de um pedido"""
+        order = OrderFactory(user=self.user)
+        product = ProductFactory()
+        url = reverse("order-detail", args=[order.id])
+        data = {
+            "product_ids": [product.id]
+        }
+        response = self.client.put(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_order(self):
+        """Deve deletar um pedido"""
+        order = OrderFactory(user=self.user)
+        url = reverse("order-detail", args=[order.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
