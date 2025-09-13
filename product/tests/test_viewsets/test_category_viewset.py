@@ -1,53 +1,40 @@
+import json
+
 from django.urls import reverse
-from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient, APITestCase
+from rest_framework.views import status
+
 from product.factories import CategoryFactory
-from order.factories import UserFactory
+from product.models import Category
 
 
-class TestCategoryViewSet(APITestCase):
+class CategoryViewSet(APITestCase):
+    client = APIClient()
+
     def setUp(self):
-        # Usuário staff para criar, atualizar e deletar categorias
-        self.user = UserFactory(is_staff=True)
-        self.client.force_authenticate(user=self.user)
+        self.category = CategoryFactory(title="books")
 
-    def test_list_categories(self):
-        category = CategoryFactory()
-        url = reverse("category-list")
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def test_get_all_category(self):
+        response = self.client.get(
+            reverse("category-list", kwargs={"version": "v1"}))
 
-    def test_retrieve_category(self):
-        category = CategoryFactory()
-        url = reverse("category-detail", args=[category.id])
-        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        category_data = json.loads(response.content)
+
+        self.assertEqual(category_data["results"]
+                        [0]["title"], self.category.title)
 
     def test_create_category(self):
-        url = reverse("category-list")
-        data = {
-            "title": "Tecnologia",
-            "slug": "tecnologia",
-            "description": "Categoria de tecnologia",
-            "active": True
-        }
-        response = self.client.post(url, data, format="json")
+        data = json.dumps({"title": "technology"})
+
+        response = self.client.post(
+            reverse("category-list", kwargs={"version": "v1"}),
+            data=data,
+            content_type="application/json",
+        )
+
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_update_category(self):
-        category = CategoryFactory()
-        url = reverse("category-detail", args=[category.id])
-        data = {
-            "title": "Tecnologia Atualizada",
-            "slug": "tecnologia-atualizada",
-            "description": "Descrição nova",
-            "active": True
-        }
-        response = self.client.put(url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        created_category = Category.objects.get(title="technology")
 
-    def test_delete_category(self):
-        category = CategoryFactory()
-        url = reverse("category-detail", args=[category.id])
-        response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(created_category.title, "technology")

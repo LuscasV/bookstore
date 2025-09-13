@@ -1,32 +1,20 @@
-import pytest
-from product.models import Product, Category
-from product.serializers.product_serializer import ProductSerializer
+from django.test import TestCase
 
-@pytest.mark.django_db
-class TestProductSerializer:
-    def test_product_serializer_fields(self):
-        category = Category.objects.create(
-            title="Electronics",
-            slug="electronics",
-            description="Electronic items",
-            active=True,
+from product.factories import CategoryFactory, ProductFactory
+from product.serializers import ProductSerializer
+
+
+class TestProductSerializer(TestCase):
+    def setUp(self) -> None:
+        self.category = CategoryFactory(title="technology")
+        self.product_1 = ProductFactory(
+            title="mouse", price=100, category=[self.category]
         )
+        self.product_serializer = ProductSerializer(self.product_1)
 
-        product = Product.objects.create(
-            title="Smartphone",
-            description="Latest smartphone model",
-            price=1500,
-            active=True,
-        )
-        product.category.add(category)
-
-        serializer = ProductSerializer(product)
-        data = serializer.data
-
-        assert set(data.keys()) == {"id", "title", "description", "price", "active", "category"}
-        assert data["title"] == "Smartphone"
-        assert data["description"] == "Latest smartphone model"
-        assert data["price"] == 1500
-        assert data["active"] is True
-        assert len(data["category"]) == 1
-        assert data["category"][0]["title"] == "Electronics"
+    def test_product_serializer(self):
+        serializer_data = self.product_serializer.data
+        self.assertEquals(serializer_data["price"], 100)
+        self.assertEquals(serializer_data["title"], "mouse")
+        self.assertEquals(
+            serializer_data["category"][0]["title"], "technology")

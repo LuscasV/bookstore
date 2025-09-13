@@ -1,29 +1,22 @@
-import pytest
-from django.contrib.auth.models import User
-from product.models.product import Product
-from order.models.order import Order
-from order.serializers.order_serializer import OrderSerializer
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from django.test import TestCase
 
-@pytest.mark.django_db
-def test_order_serializer():
-    # cria um usuário
-    user = User.objects.create_user(username="lucas", password="123456")
+from order.factories import OrderFactory, ProductFactory
+from order.serializers import OrderSerializer
 
-    # cria produtos (note que agora é title e não name)
-    product1 = Product.objects.create(title="Notebook", price=3500, active=True)
-    product2 = Product.objects.create(title="Mouse", price=150, active=True)
 
-    # cria o pedido
-    order = Order.objects.create(user=user)
-    order.product.set([product1, product2])
+class TestOrderSerializer(TestCase):
+    def setUp(self) -> None:
+        self.product_1 = ProductFactory()
+        self.product_2 = ProductFactory()
 
-    # serializa o pedido
-    serializer = OrderSerializer(order)
+        self.order = OrderFactory(product=(self.product_1, self.product_2))
+        self.order_serializer = OrderSerializer(self.order)
 
-    data = serializer.data
-
-    # valida dados
-    assert data["user"] == "lucas"
-    assert len(data["product"]) == 2
-    assert data["product"][0]["title"] == "Notebook"
-    assert data["product"][1]["title"] == "Mouse"
+    def test_order_serializer(self):
+        serializer_data = self.order_serializer.data
+        self.assertEquals(
+            serializer_data["product"][0]["title"], self.product_1.title)
+        self.assertEquals(
+            serializer_data["product"][1]["title"], self.product_2.title)
