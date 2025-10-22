@@ -33,6 +33,9 @@ jobs:
       shell: bash
       run: python -m poetry install
 
-    - name: Test
+    - name: Run tests
+      env:
+        SECRET_KEY: test-secret-key-123
+        DEBUG: "1"
       run: |
         poetry run python manage.py test
