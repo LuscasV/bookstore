@@ -140,7 +140,11 @@ REST_FRAMEWORK = {
 
 INTERNAL_IPS = ["127.0.0.1"]
 
-SECRET_KEY = os.environ["SECRET_KEY"]
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY",
+    "django-insecure-dev-key-only-for-local"
+)
+
 
 DEBUG = os.environ.get("DEBUG") == "1"
 
