@@ -3,15 +3,16 @@ from django.template import loader
 from django.views.decorators.csrf import csrf_exempt
 import git
 
-# def home(request):
-#     return JsonResponse({
-#         "status": "ok",
-#         "message": "Bookstore API is running 🚀",
-#         "endpoints": {
-#             "products": "/bookstore/v1/product",
-#             "order": "/bookstore/v1/order",
-#         }
-#     })
+def home(request):
+    return JsonResponse({
+        "status": "ok",
+        "message": "Bookstore API is running 🚀",
+        "endpoints": {
+            "products": "/bookstore/v1/product",
+            "order": "/bookstore/v1/order",
+            "hello": "/hello",
+        }
+    })
 
 @csrf_exempt
 def update(request):
